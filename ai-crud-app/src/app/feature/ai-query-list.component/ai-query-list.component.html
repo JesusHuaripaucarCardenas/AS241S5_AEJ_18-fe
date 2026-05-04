@@ -1,0 +1,287 @@
+<!-- Toast -->
+<div class="toast" *ngIf="toast" [class.toast--error]="toast.type === 'error'">
+  <span class="toast__icon">{{ toast.type === 'success' ? '✓' : '✕' }}</span>
+  {{ toast.message }}
+</div>
+
+<!-- Cell preview modal -->
+<app-cell-preview
+  [preview]="cellPreview"
+  (close)="closeCellPreview()">
+</app-cell-preview>
+
+<!-- Header -->
+<div class="page-header">
+  <div class="page-header__left">
+    <h1 class="page-title">Consultas IA</h1>
+    <p class="page-subtitle">Gestión de registros · {{ queries.length }} entradas</p>
+  </div>
+  <div class="page-header__actions">
+    <button class="btn btn--outline" (click)="openCreate('chatgpt')">
+      <span class="btn__icon">⚡</span> ChatGPT
+    </button>
+    <button class="btn btn--primary" (click)="openCreate('summarizer')">
+      <span class="btn__icon">◎</span> Summarizer
+    </button>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="filters">
+  <button class="filter-btn" [class.filter-btn--active]="filterType === 'all'" (click)="setFilter('all')">
+    Todos
+  </button>
+  <button class="filter-btn" [class.filter-btn--active]="filterType === 'active'" (click)="setFilter('active')">
+    <span class="dot dot--active"></span> Activos
+  </button>
+  <button class="filter-btn" [class.filter-btn--active]="filterType === 'inactive'" (click)="setFilter('inactive')">
+    <span class="dot dot--inactive"></span> Inactivos
+  </button>
+</div>
+
+<!-- Loading -->
+<div class="loader" *ngIf="isLoading">
+  <div class="loader__ring"></div>
+  <span>Cargando...</span>
+</div>
+
+<!-- Table -->
+<div class="table-wrapper" *ngIf="!isLoading">
+  <table class="table" *ngIf="queries.length > 0; else emptyState">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>API</th>
+        <th>Prompt / URL</th>
+        <th>Respuesta</th>
+        <th>Estado</th>
+        <th>Creado</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let q of queries"
+          class="table__row"
+          [class.table__row--inactive]="q.estado === 'I'">
+
+        <!-- ID — clickable -->
+        <td class="table__id table__cell--clickable"
+            title="Ver ID completo"
+            (click)="openCellPreview('ID del registro', q.id, 'id')">
+          {{ truncate(q.id, 10) }}
+          <span class="cell-hint">ver</span>
+        </td>
+
+        <!-- API badge -->
+        <td>
+          <span class="badge"
+            [class.badge--chatgpt]="q.apiName === 'ChatGPT'"
+            [class.badge--summarizer]="q.apiName === 'Summarizer'">
+            {{ q.apiName }}
+          </span>
+        </td>
+
+        <!-- Prompt — clickable -->
+        <td class="table__text table__cell--clickable"
+            title="Ver prompt completo"
+            (click)="openCellPreview('Prompt', q.prompt ?? q.url ?? '-', 'text')">
+          {{ truncate(q.prompt ?? q.url ?? '') }}
+          <span class="cell-hint">ver</span>
+        </td>
+
+        <!-- Response — clickable -->
+        <td class="table__text table__cell--clickable"
+            title="Ver respuesta completa"
+            (click)="openCellPreview('Respuesta', q.response ?? '-', 'response')">
+          {{ truncate(q.response ?? '') }}
+          <span class="cell-hint">ver</span>
+        </td>
+
+        <!-- Status -->
+        <td>
+          <span class="status"
+            [class.status--active]="q.estado === 'A'"
+            [class.status--inactive]="q.estado === 'I'">
+            {{ q.estado === 'A' ? 'Activo' : 'Inactivo' }}
+          </span>
+        </td>
+
+        <!-- Date -->
+        <td class="table__date">{{ formatDate(q.createdAt) }}</td>
+
+        <!-- Actions -->
+        <td class="table__actions">
+          <button class="action-btn action-btn--view" title="Ver detalle completo" (click)="openDetail(q)">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+            </svg>
+          </button>
+          <button class="action-btn action-btn--edit" title="Editar"
+                  (click)="openEdit(q)" [disabled]="q.estado === 'I'">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+          </button>
+          <button class="action-btn action-btn--delete" title="Desactivar"
+                  (click)="softDelete(q)" *ngIf="q.estado === 'A'">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+              <path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+            </svg>
+          </button>
+          <button class="action-btn action-btn--restore" title="Restaurar"
+                  (click)="restore(q)" *ngIf="q.estado === 'I'">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.53"/>
+            </svg>
+          </button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <ng-template #emptyState>
+    <div class="empty">
+      <span class="empty__icon">◌</span>
+      <p>No hay registros para mostrar</p>
+    </div>
+  </ng-template>
+</div>
+
+<!-- ===================== MODAL: CREAR ===================== -->
+<app-modal [isOpen]="showCreateModal"
+           [title]="createMode === 'chatgpt' ? '⚡ Nueva consulta ChatGPT' : '◎ Nuevo resumen URL'"
+           (close)="showCreateModal = false">
+
+  <div class="modal-tabs">
+    <button class="modal-tab" [class.modal-tab--active]="createMode === 'chatgpt'" (click)="createMode = 'chatgpt'">ChatGPT</button>
+    <button class="modal-tab" [class.modal-tab--active]="createMode === 'summarizer'" (click)="createMode = 'summarizer'">Summarizer</button>
+  </div>
+
+  <form *ngIf="createMode === 'chatgpt'" [formGroup]="chatGptForm" (ngSubmit)="submitCreate()" class="form">
+    <div class="form-group">
+      <label class="form-label">Prompt *</label>
+      <textarea class="form-control" formControlName="prompt" rows="4" placeholder="Escribe tu pregunta para ChatGPT..."></textarea>
+      <span class="form-error" *ngIf="chatGptForm.get('prompt')?.invalid && chatGptForm.get('prompt')?.touched">
+        El prompt es requerido (mínimo 3 caracteres)
+      </span>
+    </div>
+    <div class="form-footer">
+      <button type="button" class="btn btn--ghost" (click)="showCreateModal = false">Cancelar</button>
+      <button type="submit" class="btn btn--primary" [disabled]="chatGptForm.invalid">Enviar</button>
+    </div>
+  </form>
+
+  <form *ngIf="createMode === 'summarizer'" [formGroup]="summarizerForm" (ngSubmit)="submitCreate()" class="form">
+    <div class="form-group">
+      <label class="form-label">URL del artículo *</label>
+      <input class="form-control" type="url" formControlName="url" placeholder="https://ejemplo.com/articulo" />
+      <span class="form-error" *ngIf="summarizerForm.get('url')?.invalid && summarizerForm.get('url')?.touched">
+        Ingresa una URL válida (http/https)
+      </span>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Idioma</label>
+        <select class="form-control" formControlName="lang">
+          <option value="es">Español</option>
+          <option value="en">Inglés</option>
+          <option value="pt">Portugués</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Engine</label>
+        <select class="form-control" formControlName="engine">
+          <option [value]="1">Engine 1</option>
+          <option [value]="2">Engine 2</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-footer">
+      <button type="button" class="btn btn--ghost" (click)="showCreateModal = false">Cancelar</button>
+      <button type="submit" class="btn btn--primary" [disabled]="summarizerForm.invalid">Resumir</button>
+    </div>
+  </form>
+</app-modal>
+
+<!-- ===================== MODAL: EDITAR ===================== -->
+<app-modal [isOpen]="showEditModal" title="✏️ Editar consulta" (close)="showEditModal = false">
+  <form [formGroup]="editForm" (ngSubmit)="submitEdit()" class="form" *ngIf="selectedQuery">
+    <div class="form-group" *ngIf="selectedQuery.apiName === 'ChatGPT'">
+      <label class="form-label">Prompt</label>
+      <textarea class="form-control" formControlName="prompt" rows="5"></textarea>
+    </div>
+    <div class="form-group" *ngIf="selectedQuery.apiName === 'Summarizer'">
+      <label class="form-label">URL</label>
+      <input class="form-control" type="url" formControlName="url" />
+    </div>
+    <div class="form-row" *ngIf="selectedQuery.apiName === 'Summarizer'">
+      <div class="form-group">
+        <label class="form-label">Idioma</label>
+        <select class="form-control" formControlName="lang">
+          <option value="es">Español</option>
+          <option value="en">Inglés</option>
+          <option value="pt">Portugués</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Engine</label>
+        <select class="form-control" formControlName="engine">
+          <option [value]="1">Engine 1</option>
+          <option [value]="2">Engine 2</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-footer">
+      <button type="button" class="btn btn--ghost" (click)="showEditModal = false">Cancelar</button>
+      <button type="submit" class="btn btn--primary">Guardar</button>
+    </div>
+  </form>
+</app-modal>
+
+<!-- ===================== MODAL: DETALLE ===================== -->
+<app-modal [isOpen]="showDetailModal" title="👁 Detalle del registro" (close)="showDetailModal = false">
+  <div class="detail" *ngIf="selectedQuery">
+    <div class="detail__field">
+      <span class="detail__label">ID</span>
+      <span class="detail__value detail__value--mono">{{ selectedQuery.id }}</span>
+    </div>
+    <div class="detail__field">
+      <span class="detail__label">API</span>
+      <span class="badge"
+        [class.badge--chatgpt]="selectedQuery.apiName === 'ChatGPT'"
+        [class.badge--summarizer]="selectedQuery.apiName === 'Summarizer'">
+        {{ selectedQuery.apiName }}
+      </span>
+    </div>
+    <div class="detail__field">
+      <span class="detail__label">Estado</span>
+      <span class="status"
+        [class.status--active]="selectedQuery.estado === 'A'"
+        [class.status--inactive]="selectedQuery.estado === 'I'">
+        {{ selectedQuery.estado === 'A' ? 'Activo' : 'Inactivo' }}
+      </span>
+    </div>
+    <div class="detail__field detail__field--block">
+      <span class="detail__label">Prompt</span>
+      <p class="detail__value detail__value--block detail__value--response">{{ selectedQuery.prompt }}</p>
+    </div>
+    <div class="detail__field detail__field--block" *ngIf="selectedQuery.url">
+      <span class="detail__label">URL</span>
+      <a class="detail__link" [href]="selectedQuery.url" target="_blank">{{ selectedQuery.url }}</a>
+    </div>
+    <div class="detail__field detail__field--block">
+      <span class="detail__label">Respuesta</span>
+      <p class="detail__value detail__value--block detail__value--response">{{ selectedQuery.response }}</p>
+    </div>
+    <div class="detail__field">
+      <span class="detail__label">Creado</span>
+      <span class="detail__value">{{ formatDate(selectedQuery.createdAt) }}</span>
+    </div>
+    <div class="detail__field">
+      <span class="detail__label">Actualizado</span>
+      <span class="detail__value">{{ formatDate(selectedQuery.updatedAt) }}</span>
+    </div>
+  </div>
+</app-modal>
