@@ -24,11 +24,9 @@ jobs:
 
       - name: Instalar dependencias
         run: npm ci
-        working-directory: ai-crud-app
 
       - name: Build Angular (producción)
         run: npm run build -- --configuration production
-        working-directory: ai-crud-app
 
       - name: Login a DockerHub
         uses: docker/login-action@v3
@@ -39,12 +37,12 @@ jobs:
       - name: Build y Push imagen Docker
         uses: docker/build-push-action@v5
         with:
-          context: ./ai-crud-app
-          file: ./ai-crud-app/Dockerfile
+          context: .
+          file: ./Dockerfile
           push: true
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME_NOMBRE }}/as241s5_aej_${{ github.run_number }}-fe:latest
-            ${{ secrets.DOCKERHUB_USERNAME_NOMBRE }}/as241s5_aej_${{ github.run_number }}-fe:${{ github.sha }}
+            ${{ secrets.DOCKERHUB_USERNAME_NOMBRE }}/as241s5_aej_18-fe:latest
+            ${{ secrets.DOCKERHUB_USERNAME_NOMBRE }}/as241s5_aej_18-fe:${{ github.sha }}
 
       - name: Verificar imagen publicada
         run: echo "✅ Imagen frontend publicada en DockerHub exitosamente"
