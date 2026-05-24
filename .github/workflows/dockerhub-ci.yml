@@ -1,0 +1,50 @@
+name: CI/CD Frontend - Angular
+
+on:
+  push:
+    branches:
+      - develop
+  pull_request:
+    branches:
+      - develop
+
+jobs:
+  build-and-push:
+    name: Build & Push Frontend Image
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout código fuente
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Instalar dependencias
+        run: npm ci
+        working-directory: ai-crud-app
+
+      - name: Build Angular (producción)
+        run: npm run build -- --configuration production
+        working-directory: ai-crud-app
+
+      - name: Login a DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME_NOMBRE }}
+          password: ${{ secrets.DOCKERHUB_TOKEN_NOMBRE }}
+
+      - name: Build y Push imagen Docker
+        uses: docker/build-push-action@v5
+        with:
+          context: ./ai-crud-app
+          file: ./ai-crud-app/Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME_NOMBRE }}/as241s5_aej_${{ github.run_number }}-fe:latest
+            ${{ secrets.DOCKERHUB_USERNAME_NOMBRE }}/as241s5_aej_${{ github.run_number }}-fe:${{ github.sha }}
+
+      - name: Verificar imagen publicada
+        run: echo "✅ Imagen frontend publicada en DockerHub exitosamente"
