@@ -41,6 +41,7 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
+          provenance: false
           tags: |
             jesushuaripaucarcardenas/as241s5_aej_18-fe:latest
             jesushuaripaucarcardenas/as241s5_aej_18-fe:${{ github.sha }}
