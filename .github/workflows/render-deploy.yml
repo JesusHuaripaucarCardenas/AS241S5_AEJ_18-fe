@@ -1,0 +1,58 @@
+name: CI/CD Frontend - Deploy to Render
+
+on:
+  push:
+    branches:
+      - develop
+  pull_request:
+    branches:
+      - develop
+
+jobs:
+  build-and-deploy:
+    name: Build & Deploy Frontend Angular to Render
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout código fuente
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Build Angular (producción)
+        run: npm run build -- --configuration production
+
+      - name: Login a DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME_NOMBRE }}
+          password: ${{ secrets.DOCKERHUB_TOKEN_NOMBRE }}
+
+      - name: Build y Push imagen Docker
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            jesushuaripaucarcardenas/as241s5_aej_18-fe:latest
+            jesushuaripaucarcardenas/as241s5_aej_18-fe:${{ github.sha }}
+
+      - name: Deploy a Render (Frontend)
+        run: |
+          curl -s -X POST \
+            "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID_FE }}/deploys" \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{"clearCache": false}' \
+            | jq .
+
+      - name: Verificar deploy exitoso
+        run: echo "✅ Frontend desplegado en Render exitosamente"
