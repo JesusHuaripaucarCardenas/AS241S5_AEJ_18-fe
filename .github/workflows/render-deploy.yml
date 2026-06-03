@@ -56,4 +56,4 @@ jobs:
             | jq .
 
       - name: Verificar deploy exitoso
-        run: echo "✅ Frontend desplegado en Render exitosamente"
+        run: echo "Frontend desplegado en Render exitosamente"
