@@ -35,6 +35,11 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME_NOMBRE }}
           password: ${{ secrets.DOCKERHUB_TOKEN_NOMBRE }}
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver: docker-container
+
       - name: Build y Push imagen Docker
         uses: docker/build-push-action@v5
         with:
@@ -42,6 +47,7 @@ jobs:
           file: ./Dockerfile
           push: true
           provenance: false
+          sbom: false
           tags: |
             jesushuaripaucarcardenas/as241s5_aej_18-fe:latest
             jesushuaripaucarcardenas/as241s5_aej_18-fe:${{ github.sha }}
@@ -56,4 +62,4 @@ jobs:
             | jq .
 
       - name: Verificar deploy exitoso
-        run: echo "Frontend desplegado en Render exitosamente"
+        run: echo "✅ Frontend desplegado en Render exitosamente"
