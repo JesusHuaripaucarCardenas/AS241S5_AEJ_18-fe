@@ -37,8 +37,6 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-        with:
-          driver: docker-container
 
       - name: Build y Push imagen Docker
         uses: docker/build-push-action@v5
@@ -53,13 +51,7 @@ jobs:
             jesushuaripaucarcardenas/as241s5_aej_18-fe:${{ github.sha }}
 
       - name: Deploy a Render (Frontend)
-        run: |
-          curl -s -X POST \
-            "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID_FE }}/deploys" \
-            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
-            -H "Content-Type: application/json" \
-            -d '{"clearCache": false}' \
-            | jq .
+        run: curl "${{ secrets.RENDER_DEPLOY_HOOK_FE }}"
 
       - name: Verificar deploy exitoso
         run: echo "✅ Frontend desplegado en Render exitosamente"
