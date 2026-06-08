@@ -51,7 +51,7 @@ jobs:
             jesushuaripaucarcardenas/as241s5_aej_18-fe:${{ github.sha }}
 
       - name: Deploy a Render (Frontend)
-        run: curl "${{ secrets.RENDER_DEPLOY_HOOK_FE }}"
+        run: curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK_FE }}"
 
       - name: Verificar deploy exitoso
         run: echo "✅ Frontend desplegado en Render exitosamente"
