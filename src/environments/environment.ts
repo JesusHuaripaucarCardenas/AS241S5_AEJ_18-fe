@@ -1,4 +1,4 @@
 export const environment = {
   production: false,
-  apiUrl: 'http://localhost:8081'
+  apiUrl: 'https://as241s5-aej-18-be.onrender.com/v1/api/ai'
 };
